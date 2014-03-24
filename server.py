@@ -21,6 +21,9 @@ class Person(Pretty, Greenlet):
         return "You are carrying \n" + "\n".join(" %s"%x.name for x in self.items) + "\n"
         
 
+    def terminate(self):
+        raise self.GreenletExit
+
 class Item(Pretty):
     def __init__(self, name, description):
         self.name = name
@@ -61,6 +64,8 @@ class Mansion():
             r = "You move into the %s"%room.name
             self.people[person] = room
             person.room.people.remove(person)
+            for i in person.room.people:
+                i.send("%s has moved out of the room"%person.name)
             person.room = room
             person.room.people.append(person)
         return r
@@ -114,6 +119,8 @@ class Mansion():
             if command == "quit":
                 socket.send("Goodbye\n")
                 self.remove(p)
+                socket.close()
+                p.terminate()
                 return
             if command == "look":
                 socket.send(self.room_info(p))
