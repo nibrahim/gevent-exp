@@ -1,15 +1,22 @@
+from gevent import Greenlet
 from gevent.server import StreamServer
 
 class Pretty(object):
     def __repr__(self):
         return "<{} : {}>".format(self.__class__.__name__, self.name)
 
-class Person(Pretty):
-    def __init__(self, name, room = None, items = None):
+class Person(Pretty, Greenlet):
+    def __init__(self, name, socket, room = None, items = None):
+        Greenlet.__init__(self)
         self.name = name
         self.room = room
         self.items = items or []
+        self.socket = socket
+    
+    def send(self, message):
+        self.socket.send(message+"\n")
 
+    
     def inventory(self):
         return "You are carrying \n" + "\n".join(" %s"%x.name for x in self.items) + "\n"
         
@@ -84,12 +91,20 @@ class Mansion():
         else:
             return "I see no %s here"%item_name
             
+    def send_message(self, frm, to, message):
+        if to in [x.name for x in frm.room.people]:
+            to = [x for x in frm.room.people if x.name == to][0]
+            to.send("%s says '%s'"%(frm.name, message))
+            return "Let's see if %s heard you"%to.name
+        else:
+            return "I don't see %s here\n"%to
+                
     
     def handle(self, socket, remote):
         print "Received connection on %s"%socket
         socket.send("What is your name?\n")
         name = socket.recv(2048).strip()
-        p = Person(name = name)
+        p = Person(name = name, socket = socket)
         print "Created %s"%p
         self.place(p, self.rooms[0])
         socket.send(self.room_info(p))
@@ -109,6 +124,10 @@ class Mansion():
             if command.startswith("get"):
                 verb, item = command.split()
                 socket.send(self.pick_up(p, item))
+            if command.startswith("say"):
+                verb, person, message = command.split(None, 2)
+                socket.send(self.send_message(p, person, message))
+            
         
 def main():
     # Items
