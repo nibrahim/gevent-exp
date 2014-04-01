@@ -11,11 +11,11 @@ Users can then connect to the port using `telnet`. It will ask you for your name
 
 The following commands are available
 
-north, south, east, west to move
-look for a description
-get to pick up an object
-say Foo Hello to say Hello to Foo (if he's in the same room).
-quit to disconnect
+  * north, south, east, west to move
+  * look for a description
+  * get to pick up an object
+  * say Foo Hello to say Hello to Foo (if he's in the same room).
+  * quit to disconnect
 
 # Issues
 
